@@ -56,7 +56,7 @@ public class TokenServiceImpl implements TokenService {
       throw new BadCredentialsException("Value in token is empty");
     }
     TokenDTO tokenDTO = objectMapper.readValue(json, TokenDTO.class);
-    if (tokenDTO.getCreatedAt().after(new Date()) && tokenDTO.getExpiredAt().before(new Date())) {
+    if (tokenDTO.getCreatedAt().after(new Date()) || tokenDTO.getExpiredAt().before(new Date())) {
       return false;
     }
     return true;
@@ -74,7 +74,7 @@ public class TokenServiceImpl implements TokenService {
   @Override
   public boolean tokenController(String token, String url) throws JsonProcessingException {
     TokenDTO userToken = getDetailsByToken(token);
-    if (userToken.getCreatedAt().after(new Date()) && userToken.getExpiredAt().before(new Date())) {
+    if (userToken.getCreatedAt().after(new Date()) || userToken.getExpiredAt().before(new Date())) {
       throw new BadCredentialsException("Your Token has Expired...");
     } else {
       Optional<User> userOptional = userRepo.findById(userToken.getId());
@@ -85,11 +85,7 @@ public class TokenServiceImpl implements TokenService {
           .orElseThrow(() -> new IllegalArgumentException("TokenAccepetedRole : Role not found"));
       List<Integer> rolesId = permissionService.rolePermission(role.getRoleId());
       Integer urlId = permissionService.searchUrlId(url);
-      if (rolesId.contains(urlId)) {
-        return true;
-      } else {
-        return false;
-      }
+      return rolesId.contains(urlId);
     }
   }
 }

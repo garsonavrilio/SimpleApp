@@ -74,6 +74,9 @@ public class LoginServiceImpl implements LoginService {
         String json = objectMapper.writeValueAsString(tokenDTO);
         redisTemplate.opsForValue().set("Token: "+token,json);
         boolean flag2 = tokenService.tokenValid(token);
+        System.out.println(tokenDTO.getExpiredAt());
+        System.out.println(tokenDTO.getCreatedAt());
+        System.out.println(new Date());
         System.out.println(flag2);
         return new ResponseEntity<>(token, HttpStatus.OK);
       } else return new ResponseEntity<>("Invalid Password",HttpStatus.BAD_REQUEST);
