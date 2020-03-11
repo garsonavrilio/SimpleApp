@@ -9,7 +9,7 @@ public class TransactionDTO {
         Transaction t = new Transaction();
         //t.setCheckoutId(transaction.getCheckoutId());
         t.setTransactionId(transaction.getTransactionId());
-        t.setCustId(transaction.getCustId());
+        t.setUserId(transaction.getUserId());
         //t.setCustName(transaction.getCustName());
         //t.setCustAddress(transaction.getCustAddress());
         t.setTotalAmount(transaction.getTotalAmount());

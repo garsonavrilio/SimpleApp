@@ -19,5 +19,5 @@ public interface ItemServices {
     ItemResponseDTO findItemId(Integer id);
     ItemResponseDTO updateItem(Integer id,ItemRequestDTO request);
     ItemResponseDTO deleteItem(Integer id);
-    CheckoutResponseDTO itemToCheckout(ItemToCheckoutRequestDTO request, String Username);
+    //CheckoutResponseDTO itemToCheckout(ItemToCheckoutRequestDTO request, String Username);
 }

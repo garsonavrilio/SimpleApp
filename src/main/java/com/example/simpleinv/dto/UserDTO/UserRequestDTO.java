@@ -14,5 +14,13 @@ public class UserRequestDTO {
     private String fullname;
     private String gender;
     private String role;
+
+    public String getDefaultRole(){
+        return "CASHIER";
+    }
+
+    public String getAdminRole(){
+        return "ADMIN";
+    }
     //private List<User_Role> user_roles;
 }

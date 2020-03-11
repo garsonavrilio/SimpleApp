@@ -17,6 +17,7 @@ public class TransactionDetails {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer id;
   private Integer transactionId;
+  private Integer userId;
   private Integer itemId;
   private Integer itemQty;
   private Integer subTotal;

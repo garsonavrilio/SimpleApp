@@ -3,15 +3,19 @@ package com.example.simpleinv.services.transaction.impl;
 import com.example.simpleinv.dto.CheckoutDTO.CheckoutResponseDTO;
 import com.example.simpleinv.dto.CheckoutDTO.converter.CheckoutToResponseConverter;
 import com.example.simpleinv.dto.CheckoutToTransactionDTO.CheckoutToTransactionRequestDTO;
+import com.example.simpleinv.dto.ItemToTransactionDTO.ItemDetailsDTO;
+import com.example.simpleinv.dto.ItemToTransactionDTO.ItemToTransactionDTO;
 import com.example.simpleinv.dto.TransactionDTO.TransactionDTO;
 import com.example.simpleinv.model.Checkout;
 import com.example.simpleinv.model.Customer;
+import com.example.simpleinv.model.Item;
 import com.example.simpleinv.model.Transaction;
 import com.example.simpleinv.model.TransactionDetails;
 import com.example.simpleinv.model.User;
 import com.example.simpleinv.repositories.Admin.UserRepositories;
 import com.example.simpleinv.repositories.Checkout.CheckoutRepositories;
 import com.example.simpleinv.repositories.Customer.CustomerRepositories;
+import com.example.simpleinv.repositories.Item.ItemRepositories;
 import com.example.simpleinv.repositories.Transaction.TransactionRespoitories;
 import com.example.simpleinv.repositories.TransactionDetails.TransactionDetailsRepositories;
 import com.example.simpleinv.services.transaction.TransactionService;
@@ -20,6 +24,7 @@ import java.util.stream.Stream;
 import javax.swing.text.html.Option;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,47 +51,39 @@ public class TransactionServiceImplement implements TransactionService {
   @Autowired
   TransactionDetailsRepositories transactionDetailsRepositories;
 
-
-  @Transactional
-  @Override
-  public Transaction createTransaction(Integer request) {
-    Optional<User> users = userRepositories.findById(request);
-    //List<CheckoutResponseDTO> checkout = StreamSupport.stream(checkoutRepo.findAll().spliterator(),false)
-    //    .map(CheckoutToResponseConverter::convert).collect(Collectors.toList());
-    User user = users.orElseThrow(()->new IllegalArgumentException("No User Found"));
-    List<Checkout> checkout = checkoutRepo.findCheckoutbyCustId(request);
-    //if (!user.isPresent()) {
-    //  throw new IllegalArgumentException();
-   // }
-    //Customer cutomer1 =  customer.get();
-    Transaction transaction = new Transaction();
-    transaction.setTotalAmount(checkoutRepo.grandTotalCheckout(request));
-    transaction.setCustId(request);
-    transaction.setDateTime(new Date());
-    if(transaction.getTotalAmount()==null) {
-      throw new IllegalArgumentException("Checkout Empty");
-    }
-    TransactionDTO.createTransaction(transactionRepo.save(transaction));
+  @Autowired
+  ItemRepositories itemRepositories;
 
 
-    for(Checkout checkouts : checkout){
-      TransactionDetails transactionDetails = new TransactionDetails();
-      transactionDetails.setTransactionId(transaction.getTransactionId());
-      transactionDetails.setItemId(checkouts.getCheckoutItemId());
-      transactionDetails.setItemQty(checkouts.getCheckoutItemQty());
-      transactionDetails.setSubTotal(checkouts.getCheckoutTotal());
-      transactionDetails.setGrandTotal(transaction.getTotalAmount());
-      transactionDetails.setDate(new Date());
-      transactionDetailsRepositories.save(transactionDetails);
-    }
-    //transaction.setCustAddress(cutomer1.getCustAddress());
-    //transaction.setCustName(cutomer1.getCustName());
-    //transaction.setCheckoutId();
-    System.out.println("asassas");
-    checkoutRepo.deleteCheckoutById(request);
-    System.out.println("babababab");
-    return transaction;
-  }
+//  @Transactional
+//  @Override
+//  public Transaction createTransaction(Integer request) {
+//    Optional<User> users = userRepositories.findById(request);
+//    User user = users.orElseThrow(()->new IllegalArgumentException("No User Found"));
+//    List<Checkout> checkout = checkoutRepo.findCheckoutbyCustId(request);
+//    Transaction transaction = new Transaction();
+//    transaction.setTotalAmount(checkoutRepo.grandTotalCheckout(request));
+//    transaction.setUserId(request);
+//    transaction.setDateTime(new Date());
+//    if(transaction.getTotalAmount()==null) {
+//      throw new IllegalArgumentException("Checkout Empty");
+//    }
+//    TransactionDTO.createTransaction(transactionRepo.save(transaction));
+//
+//
+//    for(Checkout checkouts : checkout){
+//      TransactionDetails transactionDetails = new TransactionDetails();
+//      transactionDetails.setTransactionId(transaction.getTransactionId());
+//      transactionDetails.setItemId(checkouts.getCheckoutItemId());
+//      transactionDetails.setItemQty(checkouts.getCheckoutItemQty());
+//      transactionDetails.setSubTotal(checkouts.getCheckoutTotal());
+//      transactionDetails.setGrandTotal(transaction.getTotalAmount());
+//      transactionDetails.setDate(new Date());
+//      transactionDetailsRepositories.save(transactionDetails);
+//    }
+//    checkoutRepo.deleteCheckoutById(request);
+//    return transaction;
+//  }
 
   @Override
   public List<Transaction> getAllTransaction() {
@@ -121,5 +118,35 @@ public class TransactionServiceImplement implements TransactionService {
   public Transaction findTransactionById(Integer id) {
     Optional<Transaction> transaction = transactionRepo.findById(id);
     return transaction.get();
+  }
+
+  @Override
+  public Transaction createTransactionAndTransactionDetails(ItemToTransactionDTO request) {
+    //Create Transaction
+    Transaction transaction = new Transaction();
+    transaction.setDateTime(new Date());
+    transaction.setTotalAmount(request.getGrandTotal());
+    transaction.setUserId(request.getUserId());
+    transactionRepo.save(transaction);
+
+    for(ItemDetailsDTO item : request.getItemDetailsDTOS()){
+      //Update Stock Item
+      Optional<Item> validItem = itemRepositories.findById(item.getItemId());
+      Item updateStockItem = validItem.orElseThrow(()-> new IllegalArgumentException("Cannot find the item"));
+      updateStockItem.setItemQty(updateStockItem.getItemQty()-item.getItemQty());
+      itemRepositories.save(updateStockItem);
+
+      //Save Transaction Details
+      TransactionDetails transactionDetails = new TransactionDetails();
+      transactionDetails.setItemId(item.getItemId());
+      transactionDetails.setItemQty(item.getItemQty());
+      transactionDetails.setSubTotal(item.getSubTotal());
+      transactionDetails.setTransactionId(transaction.getTransactionId());
+      transactionDetails.setGrandTotal(request.getGrandTotal());
+      transactionDetails.setDate(transaction.getDateTime());
+      transactionDetails.setUserId(transaction.getUserId());
+      transactionDetailsRepositories.save(transactionDetails);
+    }
+    return transaction;
   }
 }

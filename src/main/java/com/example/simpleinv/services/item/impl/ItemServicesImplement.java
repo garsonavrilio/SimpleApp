@@ -25,6 +25,7 @@ import com.example.simpleinv.services.permissionrole.PermissionRoleService;
 import javax.swing.text.html.Option;
 import org.hibernate.annotations.Check;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
@@ -62,8 +63,7 @@ public class ItemServicesImplement implements ItemServices {
 
   @Override
   public List<Item> findItemName(String name) {
-    List<Item> temp = itemRepo.findByName(name);
-    return temp;
+    return itemRepo.findByName(name);
   }
 
   @Override
@@ -77,7 +77,12 @@ public class ItemServicesImplement implements ItemServices {
   @Override
   public ItemResponseDTO findItemId(Integer id) {
     Optional<Item> temp = itemRepo.findById(id);
-    return ItemToResponseConverter.convert(temp.get());
+    if(temp.isPresent()) {
+      return ItemToResponseConverter.convert(temp.get());
+    }
+    else {
+      throw new BadCredentialsException("Cannot Find the Item you Search");
+    }
   }
 
   @Override
@@ -94,55 +99,48 @@ public class ItemServicesImplement implements ItemServices {
 
   @Override
   public ItemResponseDTO deleteItem(Integer id) {
-    // boolean flag = itemRepo.existsById(id);
     Optional<Item> temp = itemRepo.findById(id);
     Item newItem = temp
         .orElseThrow(() -> new IllegalArgumentException("Index Delete Item Not Found"));
     newItem.setDeleted(true);
     itemRepo.save(newItem);
     return ItemToResponseConverter.convert(newItem);
-//        if(flag==true){
-//            Optional<Item> temp = itemRepo.findById(id);
-//            Item newItem = temp.orElseThrow(()-> new IllegalArgumentException("Index Delete Item Not Found"));
-//            itemRepo.deleteById(id);
-//            return ItemToResponseConverter.convert(temp.get());
-//        }else throw new IllegalArgumentException();
   }
 
-  @Override
-  public CheckoutResponseDTO itemToCheckout(ItemToCheckoutRequestDTO request, String username) {
-    Optional<Item> item = itemRepo.findById(request.getItemToCheckoutItemId());
-    System.out.println(request.getItemToCheckoutUserId());
-    System.out.println(request.getItemToCheckoutItemQty());
-    System.out.println(request.getItemToCheckoutItemId());
-    Optional<User> users = userRepo.findUserByUsername(username);
-    User user = users.orElseThrow(()->new IllegalArgumentException("User is empty"));
-    //Item updateQty = item.orElseThrow(()->new IllegalArgumentException("Not Found Item To Checkout"));
-    Item updateQty = item.get();
-    if (!item.isPresent()) {
-      throw new IllegalArgumentException();
-    } else {
-      if (updateQty.isDeleted()) {
-        throw new IllegalArgumentException("The Item You Selected was deleted by owner");
-      } else {
-        if (updateQty.getItemQty() - request.getItemToCheckoutItemQty() >= 0) {
-          updateQty.setItemQty(updateQty.getItemQty() - request.getItemToCheckoutItemQty());
-          ItemRequestToItemConverter.updateStock(updateQty);
-          //Item itemFound = item.orElseThrow( () -> new RuntimeException("salah"));
-          Checkout c = new Checkout();
-          c.setCheckoutItemId(updateQty.getItemId());
-          c.setCheckoutItemQty(request.getItemToCheckoutItemQty());
-          c.setCheckoutTotal(updateQty.getItemPrice() * request.getItemToCheckoutItemQty());
-          c.setCheckoutCustId(user.getUserId());
-          Checkout a = CheckoutRequestToCheckoutConverter.convertCreate(checkoutRepo.save(c));
-
-          return CheckoutToResponseConverter.convert(a);
-        } else {
-          throw new IllegalArgumentException("Quantity is not valid tho");
-        }
-      }
-    }
-  }
+//  @Override
+//  public CheckoutResponseDTO itemToCheckout(ItemToCheckoutRequestDTO request, String username) {
+//    Optional<Item> item = itemRepo.findById(request.getItemToCheckoutItemId());
+//    System.out.println(request.getItemToCheckoutUserId());
+//    System.out.println(request.getItemToCheckoutItemQty());
+//    System.out.println(request.getItemToCheckoutItemId());
+//    Optional<User> users = userRepo.findUserByUsername(username);
+//    User user = users.orElseThrow(()->new IllegalArgumentException("User is empty"));
+//    //Item updateQty = item.orElseThrow(()->new IllegalArgumentException("Not Found Item To Checkout"));
+//    Item updateQty = item.get();
+//    if (!item.isPresent()) {
+//      throw new IllegalArgumentException();
+//    } else {
+//      if (updateQty.isDeleted()) {
+//        throw new IllegalArgumentException("The Item You Selected was deleted by owner");
+//      } else {
+//        if (updateQty.getItemQty() - request.getItemToCheckoutItemQty() >= 0) {
+//          updateQty.setItemQty(updateQty.getItemQty() - request.getItemToCheckoutItemQty());
+//          ItemRequestToItemConverter.updateStock(updateQty);
+//          //Item itemFound = item.orElseThrow( () -> new RuntimeException("salah"));
+//          Checkout c = new Checkout();
+//          c.setCheckoutItemId(updateQty.getItemId());
+//          c.setCheckoutItemQty(request.getItemToCheckoutItemQty());
+//          c.setCheckoutTotal(updateQty.getItemPrice() * request.getItemToCheckoutItemQty());
+//          c.setCheckoutCustId(user.getUserId());
+//          Checkout a = CheckoutRequestToCheckoutConverter.convertCreate(checkoutRepo.save(c));
+//
+//          return CheckoutToResponseConverter.convert(a);
+//        } else {
+//          throw new IllegalArgumentException("Quantity is not valid tho");
+//        }
+//      }
+//    }
+//  }
 
 
 }

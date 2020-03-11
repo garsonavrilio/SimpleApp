@@ -17,7 +17,7 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer transactionId;
     //private Integer checkoutId;
-    private Integer custId;
+    private Integer userId;
     //private String custName;
     //private String custAddress;
     //private Integer adminId;
