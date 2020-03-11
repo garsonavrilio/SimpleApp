@@ -25,6 +25,7 @@ import javax.swing.text.html.Option;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -120,6 +121,7 @@ public class TransactionServiceImplement implements TransactionService {
     return transaction.get();
   }
 
+  @Transactional
   @Override
   public Transaction createTransactionAndTransactionDetails(ItemToTransactionDTO request) {
     //Create Transaction
@@ -133,6 +135,10 @@ public class TransactionServiceImplement implements TransactionService {
       //Update Stock Item
       Optional<Item> validItem = itemRepositories.findById(item.getItemId());
       Item updateStockItem = validItem.orElseThrow(()-> new IllegalArgumentException("Cannot find the item"));
+      if(updateStockItem.getItemQty()-item.getItemQty() <0 || item.getItemQty()<0 || updateStockItem
+          .isDeleted()){
+        throw new BadCredentialsException("The item qty is not valid or The item has been deleted by owner");
+      }
       updateStockItem.setItemQty(updateStockItem.getItemQty()-item.getItemQty());
       itemRepositories.save(updateStockItem);
 

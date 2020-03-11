@@ -68,8 +68,9 @@ public class ItemServicesImplement implements ItemServices {
 
   @Override
   public ItemResponseDTO newItem(ItemRequestDTO request) {
-
-
+    if(request.getItemQty()<0 || request.getItemPrice()<0){
+      throw new IllegalArgumentException("Invalid Quantity or Price");
+    }
     Item item = ItemRequestToItemConverter.convertCreate(request);
     return ItemToResponseConverter.convert(itemRepo.save(item));
   }
