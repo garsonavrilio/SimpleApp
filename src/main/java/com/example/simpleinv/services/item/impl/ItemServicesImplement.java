@@ -57,18 +57,22 @@ public class ItemServicesImplement implements ItemServices {
 
   @Override
   public List<ItemResponseDTO> getAllItem() {
-    return StreamSupport.stream(itemRepo.findAll().spliterator(), false)
+    List<ItemResponseDTO> result = StreamSupport.stream(itemRepo.findAll().spliterator(), false)
         .map(ItemToResponseConverter::convert).collect(Collectors.toList());
+    if(result.isEmpty()) throw new IllegalArgumentException("No Item in this List.. Please Create Item First");
+    return result;
   }
 
   @Override
   public List<Item> findItemName(String name) {
-    return itemRepo.findByName(name);
+    List<Item> result = itemRepo.findByName(name);
+    if(result.isEmpty()) throw new IllegalArgumentException("No Result the item you search");
+    return result;
   }
 
   @Override
   public ItemResponseDTO newItem(ItemRequestDTO request) {
-    if(request.getItemQty()<0 || request.getItemPrice()<0){
+    if(request.getItemQty()<=0 || request.getItemPrice()<0 || request.getItemSellPrice()<0){
       throw new IllegalArgumentException("Invalid Quantity or Price");
     }
     Item item = ItemRequestToItemConverter.convertCreate(request);
@@ -90,11 +94,14 @@ public class ItemServicesImplement implements ItemServices {
   public ItemResponseDTO updateItem(Integer id, ItemRequestDTO request) {
     boolean flag = itemRepo.existsById(id);
     if (flag) {
+      if(request.getItemQty()<=0 || request.getItemPrice()<0 || request.getItemSellPrice()<0){
+        throw new IllegalArgumentException("Invalid Quantity or Price");
+      }
       Item item = ItemRequestToItemConverter.convertUpdate(request);
       item.setItemId(id);
       return ItemToResponseConverter.convert(itemRepo.save(item));
     } else {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("Item id you want to update is invalid");
     }
   }
 

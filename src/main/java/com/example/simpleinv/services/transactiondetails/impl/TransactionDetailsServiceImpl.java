@@ -24,6 +24,8 @@ public class TransactionDetailsServiceImpl implements TransactionDetailsService 
 
   @Override
   public List<TransactionDetails> getTransactionDetails(Integer id) {
-    return transactionDetailsRepositories.getTransactionDetailsByTransactionId(id);
+    List<TransactionDetails> result = transactionDetailsRepositories.getTransactionDetailsByTransactionId(id);
+    if(result.isEmpty())throw new IllegalArgumentException("Cannot get transaction by that id");
+    return result;
   }
 }

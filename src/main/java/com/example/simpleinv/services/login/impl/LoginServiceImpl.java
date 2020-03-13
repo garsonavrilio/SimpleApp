@@ -9,6 +9,7 @@ import com.example.simpleinv.services.token.TokenService;
 import com.example.simpleinv.services.user.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.ExpiredJwtException;
 import java.io.IOException;
 import java.util.Date;
 import java.util.UUID;
@@ -29,8 +30,8 @@ public class LoginServiceImpl implements LoginService {
   @Value("${expired.time}")
   Integer expiredDate;
 
-  public Date getExpiredDate(){
-    return new Date(System.currentTimeMillis()+TOKEN_VALIDITY * expiredDate);
+  public Date getExpiredDate() {
+    return new Date(System.currentTimeMillis() + TOKEN_VALIDITY * expiredDate);
   }
 
   @Autowired
@@ -43,16 +44,10 @@ public class LoginServiceImpl implements LoginService {
   PasswordEncoder passwordEncoder;
 
   @Autowired
-  RedisTemplate<String,String> redisTemplate;
+  RedisTemplate<String, String> redisTemplate;
 
   @Autowired
   ObjectMapper objectMapper;
-
-  boolean enableLogin = false;
-
-  public boolean isEnableLogin(){
-    return enableLogin;
-  }
 
   @Override
   public ResponseEntity<?> loginService(UserLoginDTO userLoginDTO) throws IOException {
@@ -64,7 +59,6 @@ public class LoginServiceImpl implements LoginService {
     if (flag) {
       User user = userRepo.findByUsername(loginUsername);
       if (passwordEncoder.matches(loginPassword, user.getPassword())) {
-        enableLogin = true;
         UUID uuid = UUID.randomUUID();
         TokenDTO tokenDTO = new TokenDTO();
         tokenDTO.setId(user.getUserId());
@@ -72,14 +66,13 @@ public class LoginServiceImpl implements LoginService {
         tokenDTO.setExpiredAt(getExpiredDate());
         final String token = uuid.toString();
         String json = objectMapper.writeValueAsString(tokenDTO);
-        redisTemplate.opsForValue().set("Token: "+token,json);
-        boolean flag2 = tokenService.tokenValid(token);
-        System.out.println(tokenDTO.getExpiredAt());
-        System.out.println(tokenDTO.getCreatedAt());
-        System.out.println(new Date());
-        System.out.println(flag2);
+        redisTemplate.opsForValue().set("Token: " + token, json);
         return new ResponseEntity<>(token, HttpStatus.OK);
-      } else return new ResponseEntity<>("Invalid Password",HttpStatus.BAD_REQUEST);
-    } else return new ResponseEntity<>("Invalid Username and Password",HttpStatus.BAD_REQUEST);
+      } else {
+        throw new BadCredentialsException("Invalid Password");
+      }
+    } else {
+      throw new BadCredentialsException("Invalid Username and Password");
+    }
   }
 }

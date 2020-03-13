@@ -19,6 +19,7 @@ import com.example.simpleinv.repositories.Item.ItemRepositories;
 import com.example.simpleinv.repositories.Transaction.TransactionRespoitories;
 import com.example.simpleinv.repositories.TransactionDetails.TransactionDetailsRepositories;
 import com.example.simpleinv.services.transaction.TransactionService;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.stream.Stream;
 import javax.swing.text.html.Option;
@@ -88,8 +89,9 @@ public class TransactionServiceImplement implements TransactionService {
 
   @Override
   public List<Transaction> getAllTransaction() {
-    return StreamSupport.stream(transactionRepo.findAll().spliterator(), false)
-        .collect(Collectors.toList());
+    List<Transaction> result = transactionRepo.findAll();
+    if(result.isEmpty()){throw new IllegalArgumentException("No Transaction Please create a transaction");}
+    return result;
   }
 
   @Override
@@ -118,7 +120,7 @@ public class TransactionServiceImplement implements TransactionService {
   @Override
   public Transaction findTransactionById(Integer id) {
     Optional<Transaction> transaction = transactionRepo.findById(id);
-    return transaction.get();
+    return transaction.orElseThrow(()-> new IllegalArgumentException("Invalid searching transaction by Id"));
   }
 
   @Transactional

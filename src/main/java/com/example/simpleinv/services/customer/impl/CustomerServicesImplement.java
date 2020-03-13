@@ -24,7 +24,7 @@ public class CustomerServicesImplement implements CustomerService {
     @Override
     public List<CustomerResponseDTO> getAllCustomer() {
         return StreamSupport.stream(customerRepositories.findAll().spliterator(),false)
-                .map(i-> CustomerToResponseConverter.convert(i)).collect(Collectors.toList());
+                .map(CustomerToResponseConverter::convert).collect(Collectors.toList());
     }
 
     /*@Override
@@ -36,7 +36,8 @@ public class CustomerServicesImplement implements CustomerService {
     @Override
     public CustomerResponseDTO getCustomerId(Integer id) {
         Optional<Customer> temp = customerRepositories.findById(id);
-        return CustomerToResponseConverter.convert(temp.get());
+        Customer customer = temp.orElseThrow(()-> new IllegalArgumentException("Cannot find Customer details by ID"));
+        return CustomerToResponseConverter.convert(customer);
     }
 
     @Override
@@ -48,19 +49,20 @@ public class CustomerServicesImplement implements CustomerService {
     @Override
     public CustomerResponseDTO updateCustomer(Integer id, CustomerRequestDTO request) {
         boolean flag = customerRepositories.existsById(id);
-        if(flag==true){
+        if(flag){
             Customer temp = CustomerRequestToCustomerConverter.convertUpdate(request);
             temp.setCustId(id);
             return CustomerToResponseConverter.convert(customerRepositories.save(temp));
         }
-        else throw new IllegalArgumentException();
+        else throw new IllegalArgumentException("The Id is invalid to update this customer details");
     }
 
     @Override
     public CustomerResponseDTO deleteCustomer(Integer id) {
         Optional<Customer> temp = customerRepositories.findById(id);
         customerRepositories.deleteById(id);
-        return CustomerToResponseConverter.convert(temp.get());
+        Customer customer = temp.orElseThrow(()-> new IllegalArgumentException("Cannot delete this customer by ID"));
+        return CustomerToResponseConverter.convert(customer);
     }
 
     /*@Override

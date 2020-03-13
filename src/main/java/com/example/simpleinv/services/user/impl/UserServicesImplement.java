@@ -1,6 +1,7 @@
 package com.example.simpleinv.services.user.impl;
 
 //import com.example.simpleinv.config.JwtTokenUtil;
+
 import com.example.simpleinv.dto.TokenDTO.TokenDTO;
 import com.example.simpleinv.dto.UserDTO.UpdateUserDTO;
 import com.example.simpleinv.dto.UserDTO.UserRequestDTO;
@@ -71,8 +72,12 @@ public class UserServicesImplement implements UserService {
 //    System.out.println(username);
 //    username = jwtTokenUtil.getUsernameFromToken(token);
 //    System.out.println(username);
-    return StreamSupport.stream(userRepo.findAll().spliterator(), false)
+    List<UserResponseDTO> result = StreamSupport.stream(userRepo.findAll().spliterator(), false)
         .map(UserToResponseConverter::convert).collect(Collectors.toList());
+    if (result.isEmpty()) {
+      throw new IllegalArgumentException("Insert Item first");
+    }
+    return result;
   }
 
   @Override
@@ -81,7 +86,7 @@ public class UserServicesImplement implements UserService {
     if (user.isPresent()) {
       return UserToResponseConverter.convert(user.get());
     } else {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("The userId you tryin to search is not found tho");
     }
   }
 
@@ -90,12 +95,12 @@ public class UserServicesImplement implements UserService {
       throws JsonProcessingException {
     TokenDTO userToken = tokenService.getDetailsByToken(token);
     Optional<User_Role> optionalUserRole = userRole_repositories.findByUserId(userToken.getId());
-    User_Role userRoleToBeUpdated = optionalUserRole.orElseThrow(() -> new IllegalArgumentException("Invalid user Id"));
+    User_Role userRoleToBeUpdated = optionalUserRole
+        .orElseThrow(() -> new IllegalArgumentException("Invalid user Id"));
     Optional<Role> opRole = roleRepositories.findById(userRoleToBeUpdated.getRoleId());
-    Role roleUpdate = opRole.orElseThrow(()-> new IllegalArgumentException("Cannot find role"));
+    Role roleUpdate = opRole.orElseThrow(() -> new IllegalArgumentException("Cannot find role"));
 
-
-    if(userRoleToBeUpdated.getRoleId()==2) {
+    if (userRoleToBeUpdated.getRoleId() == 2) {
 
       Optional<Role> optionalRole = roleRepositories.findRolesByRoleName(request.getRole());
       Role newRole = optionalRole.orElseThrow(() -> new IllegalArgumentException("Invalid Role"));
@@ -107,8 +112,7 @@ public class UserServicesImplement implements UserService {
       temp.setUserId(userToken.getId());
       temp.setPassword(passwordEncoder.encode(request.getPassword()));
       return UserToResponseConverter.convert(userRepo.save(temp));
-    }
-    else if (userRoleToBeUpdated.getRoleId()==1 || userRoleToBeUpdated.getRoleId()==3){
+    } else if (userRoleToBeUpdated.getRoleId() == 1 || userRoleToBeUpdated.getRoleId() == 3) {
       //Optional<Role> optionalRole = roleRepositories.findRolesByRoleName(request.getRole());
       //Role newRole = optionalRole.orElseThrow(() -> new IllegalArgumentException("Invalid Role"));
       userRoleToBeUpdated.setUserName(request.getUsername());
@@ -120,8 +124,9 @@ public class UserServicesImplement implements UserService {
       temp.setUserId(userToken.getId());
       temp.setPassword(passwordEncoder.encode(request.getPassword()));
       return UserToResponseConverter.convert(userRepo.save(temp));
+    } else {
+      throw new BadCredentialsException("HAHAHAH RUSAK");
     }
-    else throw new BadCredentialsException("HAHAHAH RUSAK");
   }
 
   @Override
@@ -132,20 +137,23 @@ public class UserServicesImplement implements UserService {
       userRepo.deleteById(Id);
       return temp.map(UserToResponseConverter::convert).orElse(null);
     } else {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("The User Id is not valid");
     }
   }
 
   @Override
   public UserResponseDTO createUser(UserRequestDTO request) {
     boolean flag = userRepo.existsByUsername(request.getUsername());
-    if(flag) throw new IllegalArgumentException("Username is already Exist");
+    if (flag) {
+      throw new IllegalArgumentException("Username is already Exist");
+    }
 
     User user = UserRequestToUserConverter.convertCreate(request);
     user.setPassword(passwordEncoder.encode(user.getPassword()));
     if (request.getRole().isEmpty()) {
       Optional<Role> roleOptional = roleRepositories.findRolesByRoleName(request.getDefaultRole());
-      Role role = roleOptional.orElseThrow(()-> new IllegalArgumentException("Cannot find Default Role"));
+      Role role = roleOptional
+          .orElseThrow(() -> new IllegalArgumentException("Cannot find Default Role"));
       user.setRole(role.getRoleName());
       userRepo.save(user);
       User_Role userRole = new User_Role();
@@ -204,21 +212,24 @@ public class UserServicesImplement implements UserService {
   @Override
   public UserResponseDTO createAdmin(UserRequestDTO request) {
     boolean flag = userRepo.existsByUsername(request.getUsername());
-    if(flag) throw new IllegalArgumentException("Username is already Exist");
+    if (flag) {
+      throw new IllegalArgumentException("Username is already Exist");
+    }
 
     User user = UserRequestToUserConverter.convertCreate(request);
     user.setPassword(passwordEncoder.encode(user.getPassword()));
-      Optional<Role> roleOptional = roleRepositories.findRolesByRoleName(request.getAdminRole());
-      Role role = roleOptional.orElseThrow(() -> new IllegalArgumentException("Cannot find Admin Role"));
-      user.setRole(role.getRoleName());
-      userRepo.save(user);
-      User_Role userRole = new User_Role();
-      userRole.setUserName(user.getUsername());
-      userRole.setRoleId(role.getRoleId());
-      userRole.setUserId(user.getUserId());
-      userRole_repositories.save(userRole);
+    Optional<Role> roleOptional = roleRepositories.findRolesByRoleName(request.getAdminRole());
+    Role role = roleOptional
+        .orElseThrow(() -> new IllegalArgumentException("Cannot find Admin Role"));
+    user.setRole(role.getRoleName());
+    userRepo.save(user);
+    User_Role userRole = new User_Role();
+    userRole.setUserName(user.getUsername());
+    userRole.setRoleId(role.getRoleId());
+    userRole.setUserId(user.getUserId());
+    userRole_repositories.save(userRole);
 
-      return UserToResponseConverter.convert(user);
+    return UserToResponseConverter.convert(user);
 
   }
 
