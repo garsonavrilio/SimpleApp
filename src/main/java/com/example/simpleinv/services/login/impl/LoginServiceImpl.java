@@ -66,6 +66,7 @@ public class LoginServiceImpl implements LoginService {
         tokenDTO.setExpiredAt(getExpiredDate());
         final String token = uuid.toString();
         String json = objectMapper.writeValueAsString(tokenDTO);
+        System.out.println(json);
         redisTemplate.opsForValue().set("Token: " + token, json);
         return new ResponseEntity<>(token, HttpStatus.OK);
       } else {
